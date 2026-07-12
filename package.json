@@ -1,0 +1,26 @@
+{
+  "name": "yuno",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^7.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "apps/*/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "bun run --cwd apps/api dev",
+    "dev:web": "bun run --cwd apps/web/web dev",
+    "build:api": "bun run --cwd apps/api build",
+    "build:web": "bun run --cwd apps/web/web build",
+    "dev": "bun run --workspaces --if-present --parallel dev",
+    "build": "bun run build:api && bun run build:web"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.0"
+  }
+}

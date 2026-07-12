@@ -1,0 +1,20 @@
+{
+  "name": "api",
+  "scripts": {
+    "dev": "bun run --watch index.ts",
+    "build": "tsc --noEmit"
+  },
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.0"
+  },
+  "dependencies": {
+    "@yuno/shared-types": "workspace:*",
+    "elysia": "^1.4.29"
+  }
+}
