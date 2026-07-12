@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
 import { desc } from "drizzle-orm";
 import type { User } from "@yuno/shared-types";
@@ -7,8 +8,22 @@ import { db } from "./db/client";
 import { tasks } from "./db/schema";
 
 const users: User[] = [{ id: 1, nombre: "Luis" }];
+const allowedOrigins = (
+  process.env.CORS_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173"
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const app = new Elysia()
+  .use(
+    cors({
+      origin: allowedOrigins,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    }),
+  )
   .use(
     swagger({
       path: "/docs",
