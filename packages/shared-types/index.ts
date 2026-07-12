@@ -1,4 +1,2 @@
-export interface User {
-  id: number;
-  nombre: string;
-}
+export * from "./src/users/user.types";
+export * from "./src/tasks/task.schemas";
