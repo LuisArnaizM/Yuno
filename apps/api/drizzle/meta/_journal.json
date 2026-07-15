@@ -8,6 +8,34 @@
       "when": 1783848429737,
       "tag": "0000_icy_oracle",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783966426253,
+      "tag": "0001_new_crusher_hogan",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783967851551,
+      "tag": "0002_wealthy_bloodstorm",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1784137610732,
+      "tag": "0003_lumpy_smiling_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784138130586,
+      "tag": "0004_graceful_black_knight",
+      "breakpoints": true
     }
   ]
 }

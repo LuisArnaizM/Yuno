@@ -1,7 +1,9 @@
 import { Database } from "bun:sqlite";
+import { resolve } from "node:path";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import * as schema from "./schema";
 
-const sqlite = new Database("./db.sqlite");
+const dbPath = resolve(import.meta.dir, "../db.sqlite");
+const sqlite = new Database(dbPath);
 
 export const db = drizzle(sqlite, { schema });
