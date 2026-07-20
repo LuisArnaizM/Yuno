@@ -2,13 +2,28 @@ import { z } from "zod";
 import { projectDtoSchema } from "../projects/project.schemas";
 import { tagDtoSchema } from "../tags/tag.schemas";
 
-export const taskStatusSchema = z.enum(["todo", "in_progress", "done"]);
+export const taskStatusSchema = z.enum([
+  "todo",
+  "in_progress",
+  "blocked",
+  "done",
+]);
 
 export const createTaskDtoSchema = z.object({
   title: z.string().trim().min(1, "El titulo es obligatorio").max(120),
   description: z.string().trim().max(500).optional(),
   projectId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
+  status: taskStatusSchema.optional(),
+  tagIds: z.array(z.number().int().positive()).optional(),
+});
+
+export const updateTaskDtoSchema = z.object({
+  title: z.string().trim().min(1, "El titulo es obligatorio").max(120).optional(),
+  description: z.string().trim().max(500).nullable().optional(),
+  projectId: z.number().int().positive().nullable().optional(),
+  assigneeId: z.number().int().positive().nullable().optional(),
+  status: taskStatusSchema.optional(),
   tagIds: z.array(z.number().int().positive()).optional(),
 });
 
@@ -35,4 +50,5 @@ export const taskDtoSchema = z.object({
 
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
 export type CreateTaskDto = z.infer<typeof createTaskDtoSchema>;
+export type UpdateTaskDto = z.infer<typeof updateTaskDtoSchema>;
 export type TaskDto = z.infer<typeof taskDtoSchema>;

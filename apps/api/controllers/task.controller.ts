@@ -1,8 +1,10 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import {
   createTaskDtoSchema,
+  updateTaskDtoSchema,
   taskDtoSchema,
   type TaskDto,
+  type TaskStatus,
 } from "@yuno/shared-types";
 import { db } from "@/db/client";
 import {
@@ -14,12 +16,13 @@ import {
   projectMembers,
 } from "@/db/schema";
 import { and } from "drizzle-orm";
+import { invalidPayloadResponse } from "@/lib/validation";
 
 function buildTaskDto(row: {
   id: number;
   title: string;
   description: string | null;
-  status: "todo" | "in_progress" | "done";
+  status: TaskStatus;
   projectId: number | null;
   project: {
     id: number;
@@ -138,6 +141,31 @@ async function loadTaskById(taskId: number) {
   });
 }
 
+async function replaceTaskTags(taskId: number, tagIds: number[]) {
+  await db.delete(taskTags).where(eq(taskTags.taskId, taskId));
+
+  if (tagIds.length > 0) {
+    await db.insert(taskTags).values(
+      tagIds.map((tagId) => ({
+        taskId,
+        tagId,
+      })),
+    );
+  }
+}
+
+async function canUserAccessTask(userId: number, taskId: number) {
+  const [row] = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .leftJoin(projects, eq(tasks.projectId, projects.id))
+    .innerJoin(projectMembers, eq(projectMembers.projectId, projects.id))
+    .where(and(eq(tasks.id, taskId), eq(projectMembers.userId, userId)))
+    .limit(1);
+
+  return Boolean(row);
+}
+
 export async function listTasks(userId: number): Promise<TaskDto[]> {
   const taskRows = await db
     .select({
@@ -224,13 +252,7 @@ export async function createTask(userId: number, body: unknown) {
   const parsedBody = createTaskDtoSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return {
-      status: 400 as const,
-      body: {
-        message: "Payload invalido",
-        issues: parsedBody.error.flatten(),
-      },
-    };
+    return invalidPayloadResponse(parsedBody.error);
   }
 
   const tagIds = [...new Set(parsedBody.data.tagIds ?? [])];
@@ -293,7 +315,7 @@ export async function createTask(userId: number, body: unknown) {
       description: parsedBody.data.description ?? null,
       projectId: parsedBody.data.projectId ?? null,
       assigneeId: parsedBody.data.assigneeId ?? userId,
-      status: "todo",
+      status: parsedBody.data.status ?? "todo",
       createdAt: now,
       updatedAt: now,
     })
@@ -306,14 +328,7 @@ export async function createTask(userId: number, body: unknown) {
     };
   }
 
-  if (tagIds.length > 0) {
-    await db.insert(taskTags).values(
-      tagIds.map((tagId) => ({
-        taskId: inserted.id,
-        tagId,
-      })),
-    );
-  }
+  await replaceTaskTags(inserted.id, tagIds);
 
   const task = await loadTaskById(inserted.id);
 
@@ -326,6 +341,86 @@ export async function createTask(userId: number, body: unknown) {
 
   return {
     status: 201 as const,
+    body: task,
+  };
+}
+
+export async function updateTask(userId: number, taskId: number, body: unknown) {
+  const parsedBody = updateTaskDtoSchema.safeParse(body);
+
+  if (!parsedBody.success) {
+    return invalidPayloadResponse(parsedBody.error);
+  }
+
+  const canAccess = await canUserAccessTask(userId, taskId);
+
+  if (!canAccess) {
+    return {
+      status: 403 as const,
+      body: { message: "No tienes acceso a esta task" },
+    };
+  }
+
+  if (parsedBody.data.tagIds) {
+    const uniqueTagIds = [...new Set(parsedBody.data.tagIds)];
+    const existingTags = await db
+      .select({ id: tags.id })
+      .from(tags)
+      .where(inArray(tags.id, uniqueTagIds));
+
+    if (existingTags.length !== uniqueTagIds.length) {
+      return {
+        status: 400 as const,
+        body: { message: "Uno o mas tags indicados no existen" },
+      };
+    }
+  }
+
+  const now = new Date().toISOString();
+  const [updated] = await db
+    .update(tasks)
+    .set({
+      title: parsedBody.data.title,
+      description:
+        parsedBody.data.description === undefined
+          ? undefined
+          : parsedBody.data.description,
+      projectId:
+        parsedBody.data.projectId === undefined
+          ? undefined
+          : parsedBody.data.projectId,
+      assigneeId:
+        parsedBody.data.assigneeId === undefined
+          ? undefined
+          : parsedBody.data.assigneeId,
+      status: parsedBody.data.status,
+      updatedAt: now,
+    })
+    .where(eq(tasks.id, taskId))
+    .returning();
+
+  if (!updated) {
+    return {
+      status: 500 as const,
+      body: { message: "No se pudo actualizar la task" },
+    };
+  }
+
+  if (parsedBody.data.tagIds) {
+    await replaceTaskTags(taskId, [...new Set(parsedBody.data.tagIds)]);
+  }
+
+  const task = await loadTaskById(taskId);
+
+  if (!task) {
+    return {
+      status: 500 as const,
+      body: { message: "No se pudo recuperar la task actualizada" },
+    };
+  }
+
+  return {
+    status: 200 as const,
     body: task,
   };
 }

@@ -16,6 +16,20 @@
   --radius: 0.75rem;
 }
 
+.dark {
+  --background: oklch(0.18 0.015 250);
+  --foreground: oklch(0.94 0.015 110);
+  --card: oklch(0.23 0.018 252);
+  --card-foreground: oklch(0.94 0.015 110);
+  --primary: oklch(0.76 0.16 168);
+  --primary-foreground: oklch(0.2 0.02 250);
+  --muted: oklch(0.28 0.015 250);
+  --muted-foreground: oklch(0.73 0.02 110);
+  --border: oklch(0.34 0.015 252);
+  --input: oklch(0.32 0.015 252);
+  --ring: oklch(0.76 0.16 168);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -50,4 +64,52 @@ body {
       oklch(0.9 0.05 205 / 30%),
       transparent 30%
     );
+  transition:
+    background-color 220ms ease,
+    color 220ms ease,
+    background-image 220ms ease;
+}
+
+.dark body {
+  background-image:
+    radial-gradient(
+      circle at 10% 10%,
+      oklch(0.42 0.09 170 / 25%),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 90% 0%,
+      oklch(0.35 0.05 220 / 20%),
+      transparent 28%
+    ),
+    linear-gradient(180deg, oklch(0.19 0.015 250), oklch(0.15 0.015 252));
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.sidebar-grab-handle {
+  display: inline-flex;
+  height: 68px;
+  width: 20px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+  background: color-mix(in oklch, var(--card) 86%, transparent);
+  color: var(--muted-foreground);
+  box-shadow: 0 16px 30px -24px oklch(0.1 0.01 250 / 70%);
+  backdrop-filter: blur(16px);
+  cursor: ew-resize;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.sidebar-grab-handle:hover {
+  color: var(--foreground);
+  transform: translateX(1px);
 }

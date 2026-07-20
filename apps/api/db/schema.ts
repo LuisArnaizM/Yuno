@@ -70,7 +70,7 @@ export const tasks = sqliteTable(
     assigneeId: integer("assignee_id").references(() => users.id, {
       onDelete: "set null",
     }),
-    status: text("status", { enum: ["todo", "in_progress", "done"] })
+    status: text("status", { enum: ["todo", "in_progress", "blocked", "done"] })
       .$type<TaskStatus>()
       .notNull()
       .default("todo"),

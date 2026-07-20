@@ -20,6 +20,7 @@
         "@yuno/shared-types": "workspace:*",
         "drizzle-orm": "^0.45.2",
         "elysia": "^1.4.29",
+        "zod": "^4.4.3",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -43,6 +44,7 @@
         "react-router-dom": "^7.18.1",
         "tailwind-merge": "^3.6.0",
         "tailwindcss-animate": "^1.0.7",
+        "zod": "^4.4.3",
       },
       "devDependencies": {
         "@eslint/js": "^10.0.1",

@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { resolveCurrentUser } from "@/lib/auth";
+import { authService } from "@/lib/auth";
 import { createProject, listProjects } from "@/controllers/project.controller";
 
 const authHeaderSchema = t.Object({
@@ -15,14 +15,14 @@ export const projectRoutes = new Elysia({ prefix: "/projects" })
   .get(
     "/",
     async ({ headers, set }) => {
-      const currentUser = await resolveCurrentUser(headers.authorization);
+      const authResult = await authService.authenticate(headers.authorization);
 
-      if (!currentUser) {
-        set.status = 401;
-        return { message: "No autorizado" };
+      if (!authResult.ok) {
+        set.status = authResult.status;
+        return authResult.body;
       }
 
-      return listProjects(currentUser.id);
+      return listProjects(authResult.user.id);
     },
     {
       headers: authHeaderSchema,
@@ -32,14 +32,14 @@ export const projectRoutes = new Elysia({ prefix: "/projects" })
   .post(
     "/",
     async ({ body, headers, set }) => {
-      const currentUser = await resolveCurrentUser(headers.authorization);
+      const authResult = await authService.authenticate(headers.authorization);
 
-      if (!currentUser) {
-        set.status = 401;
-        return { message: "No autorizado" };
+      if (!authResult.ok) {
+        set.status = authResult.status;
+        return authResult.body;
       }
 
-      const result = await createProject(currentUser.id, body);
+      const result = await createProject(authResult.user.id, body);
 
       if (result.status >= 400) {
         set.status = result.status;

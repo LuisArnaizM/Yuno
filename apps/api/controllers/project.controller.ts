@@ -6,6 +6,7 @@ import {
 } from "@yuno/shared-types";
 import { db } from "@/db/client";
 import { projectMembers, projects } from "@/db/schema";
+import { invalidPayloadResponse } from "@/lib/validation";
 
 export async function listProjects(userId: number): Promise<ProjectDto[]> {
   const rows = await db
@@ -27,13 +28,7 @@ export async function createProject(userId: number, body: unknown) {
   const parsedBody = createProjectDtoSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return {
-      status: 400 as const,
-      body: {
-        message: "Payload invalido",
-        issues: parsedBody.error.flatten(),
-      },
-    };
+    return invalidPayloadResponse(parsedBody.error);
   }
 
   const now = new Date().toISOString();

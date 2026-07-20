@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createUserSchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio").max(120),
   email: z.email(),
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+  password: z.string().min(5, "La contraseña debe tener al menos 5 caracteres"),
 });
 
 export const userDtoSchema = z.object({
@@ -13,7 +13,10 @@ export const userDtoSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.email(),
+  name: z
+    .string()
+    .min(1, "El nombre es obligatorio")
+    .max(30, "El nombre no puede tener más de 30 caracteres"),
   password: z.string().min(1, "La contraseña es obligatoria"),
 });
 

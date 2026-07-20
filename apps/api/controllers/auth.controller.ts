@@ -7,31 +7,14 @@ import {
 } from "@yuno/shared-types";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
-import { jwtSecret, signJwt } from "@/lib/jwt";
-
-type AuthResponse = {
-  user: UserDto;
-  token: string;
-};
-
-async function buildAuthResponse(user: UserDto): Promise<AuthResponse> {
-  return {
-    user,
-    token: await signJwt({ sub: user.id }, jwtSecret),
-  };
-}
+import { authService } from "@/lib/auth";
+import { invalidPayloadResponse } from "@/lib/validation";
 
 export async function registerUser(body: unknown) {
   const parsedBody = createUserSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return {
-      status: 400 as const,
-      body: {
-        message: "Payload invalido",
-        issues: parsedBody.error.flatten(),
-      },
-    };
+    return invalidPayloadResponse(parsedBody.error);
   }
 
   const [existing] = await db
@@ -73,7 +56,7 @@ export async function registerUser(body: unknown) {
 
   return {
     status: 201 as const,
-    body: await buildAuthResponse(userDtoSchema.parse(inserted)),
+    body: await authService.createAuthResponse(userDtoSchema.parse(inserted)),
   };
 }
 
@@ -81,13 +64,7 @@ export async function loginUser(body: unknown) {
   const parsedBody = loginSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return {
-      status: 400 as const,
-      body: {
-        message: "Payload invalido",
-        issues: parsedBody.error.flatten(),
-      },
-    };
+    return invalidPayloadResponse(parsedBody.error);
   }
 
   const [userRecord] = await db
@@ -98,7 +75,7 @@ export async function loginUser(body: unknown) {
       passwordHash: users.passwordHash,
     })
     .from(users)
-    .where(eq(users.email, parsedBody.data.email))
+    .where(eq(users.name, parsedBody.data.name))
     .limit(1);
 
   if (!userRecord) {
@@ -122,7 +99,7 @@ export async function loginUser(body: unknown) {
 
   return {
     status: 200 as const,
-    body: await buildAuthResponse(
+    body: await authService.createAuthResponse(
       userDtoSchema.parse({
         id: userRecord.id,
         name: userRecord.name,
@@ -133,15 +110,14 @@ export async function loginUser(body: unknown) {
 }
 
 export async function getCurrentUser(currentUser: UserDto | null) {
-  if (!currentUser) {
-    return {
-      status: 401 as const,
-      body: { message: "No autorizado" },
-    };
+  const authResult = authService.requireUser(currentUser);
+
+  if (!authResult.ok) {
+    return authResult;
   }
 
   return {
     status: 200 as const,
-    body: currentUser,
+    body: authResult.user,
   };
 }

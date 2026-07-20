@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { resolveCurrentUser } from "@/lib/auth";
+import { authService } from "@/lib/auth";
 import {
   getCurrentUser,
   loginUser,
@@ -13,11 +13,11 @@ const authHeaderSchema = t.Object({
 const registerBodySchema = t.Object({
   name: t.String({ minLength: 1, maxLength: 120 }),
   email: t.String({ format: "email" }),
-  password: t.String({ minLength: 8 }),
+  password: t.String({ minLength: 4 }),
 });
 
 const loginBodySchema = t.Object({
-  email: t.String({ format: "email" }),
+  name: t.String({ minLength: 1, maxLength: 120 }),
   password: t.String({ minLength: 1 }),
 });
 
@@ -57,8 +57,10 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
   .get(
     "/me",
     async ({ headers, set }) => {
+      const authResult = await authService.authenticate(headers.authorization);
+
       const result = await getCurrentUser(
-        await resolveCurrentUser(headers.authorization),
+        authResult.ok ? authResult.user : null,
       );
 
       if (result.status >= 400) {
