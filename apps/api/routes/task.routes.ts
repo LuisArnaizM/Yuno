@@ -88,7 +88,11 @@ export const taskRoutes = new Elysia({ prefix: "/tasks" })
         return authResult.body;
       }
 
-      const result = await updateTask(authResult.user.id, Number(params.taskId), body);
+      const result = await updateTask(
+        authResult.user.id,
+        Number(params.taskId),
+        body,
+      );
 
       if (result.status >= 400) {
         set.status = result.status;

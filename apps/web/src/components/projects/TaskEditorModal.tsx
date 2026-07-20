@@ -57,11 +57,18 @@ export function TaskEditorModal({
         <CardHeader className="flex-row items-start justify-between gap-4 space-y-0 border-b border-border/60 p-5">
           <div className="grid gap-1">
             <CardTitle className="text-xl">
-              {mode === "create" ? t("taskEditor.create.title") : t("taskEditor.edit.title")}
+              {mode === "create"
+                ? t("taskEditor.create.title")
+                : t("taskEditor.edit.title")}
             </CardTitle>
             <p className="text-sm text-muted-foreground">{projectName}</p>
           </div>
-          <Button variant="ghost" size="sm" className="size-9 px-0" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-9 px-0"
+            onClick={onClose}
+          >
             <X className="size-4" />
           </Button>
         </CardHeader>
@@ -80,7 +87,9 @@ export function TaskEditorModal({
             <Label>{t("taskEditor.description")}</Label>
             <Textarea
               value={values.description}
-              onChange={(event) => onChange({ description: event.target.value })}
+              onChange={(event) =>
+                onChange({ description: event.target.value })
+              }
               placeholder={t("taskEditor.descriptionPlaceholder")}
             />
           </label>
@@ -90,7 +99,9 @@ export function TaskEditorModal({
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={values.status}
-              onChange={(event) => onChange({ status: event.target.value as TaskStatus })}
+              onChange={(event) =>
+                onChange({ status: event.target.value as TaskStatus })
+              }
             >
               <option value="todo">{t("taskStatus.todo")}</option>
               <option value="in_progress">{t("taskStatus.in_progress")}</option>

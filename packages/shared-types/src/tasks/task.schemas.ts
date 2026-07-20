@@ -19,7 +19,12 @@ export const createTaskDtoSchema = z.object({
 });
 
 export const updateTaskDtoSchema = z.object({
-  title: z.string().trim().min(1, "El titulo es obligatorio").max(120).optional(),
+  title: z
+    .string()
+    .trim()
+    .min(1, "El titulo es obligatorio")
+    .max(120)
+    .optional(),
   description: z.string().trim().max(500).nullable().optional(),
   projectId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),

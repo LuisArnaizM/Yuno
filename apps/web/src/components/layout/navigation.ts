@@ -1,8 +1,4 @@
-import {
-  FolderOpen,
-  Home,
-  type LucideIcon,
-} from "lucide-react";
+import { FolderOpen, Home, type LucideIcon } from "lucide-react";
 
 type NavigationItem = {
   to: string;

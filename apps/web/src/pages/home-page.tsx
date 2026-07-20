@@ -54,7 +54,9 @@ export function HomePage() {
               </Link>
               <Link to={dashboard.isAuthenticated ? "/app/tasks" : "/auth"}>
                 <Button>
-                  {dashboard.isAuthenticated ? t("dashboard.cta.tasks") : t("auth.connect")}
+                  {dashboard.isAuthenticated
+                    ? t("dashboard.cta.tasks")
+                    : t("auth.connect")}
                   <ArrowRight className="size-4" />
                 </Button>
               </Link>
@@ -63,25 +65,33 @@ export function HomePage() {
 
           <div className="grid gap-3 rounded-[1.5rem] border border-border/70 bg-background/70 p-4">
             <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-card px-4 py-3">
-              <span className="text-sm text-muted-foreground">{t("common.userPanel")}</span>
+              <span className="text-sm text-muted-foreground">
+                {t("common.userPanel")}
+              </span>
               <span className="text-sm font-medium">
                 {dashboard.isAuthenticated ? dashboard.user?.name : "Invitado"}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-card px-4 py-3">
-              <span className="text-sm text-muted-foreground">{t("dashboard.stats.projects")}</span>
+              <span className="text-sm text-muted-foreground">
+                {t("dashboard.stats.projects")}
+              </span>
               <span className="text-sm font-medium">
                 {stats?.projectsCount ?? 0}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-card px-4 py-3">
-              <span className="text-sm text-muted-foreground">{t("dashboard.stats.inProgress")}</span>
+              <span className="text-sm text-muted-foreground">
+                {t("dashboard.stats.inProgress")}
+              </span>
               <span className="text-sm font-medium">
                 {stats?.tasksInProgressCount ?? 0}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-card px-4 py-3">
-              <span className="text-sm text-muted-foreground">{t("dashboard.stats.progress")}</span>
+              <span className="text-sm text-muted-foreground">
+                {t("dashboard.stats.progress")}
+              </span>
               <span className="text-sm font-medium">
                 {stats ? `${stats.completionRate}%` : "0%"}
               </span>
@@ -94,11 +104,10 @@ export function HomePage() {
         <Card className="border-border/70 bg-card/82">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Layers3 className="size-4 text-primary" /> {t("dashboard.stats.projects")}
+              <Layers3 className="size-4 text-primary" />{" "}
+              {t("dashboard.stats.projects")}
             </CardTitle>
-            <CardDescription>
-              {t("projects.subtitle")}
-            </CardDescription>
+            <CardDescription>{t("projects.subtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="text-3xl font-semibold">
             {stats?.projectsCount ?? 0}
@@ -107,11 +116,10 @@ export function HomePage() {
         <Card className="border-border/70 bg-card/82">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Clock3 className="size-4 text-primary" /> {t("dashboard.stats.inProgress")}
+              <Clock3 className="size-4 text-primary" />{" "}
+              {t("dashboard.stats.inProgress")}
             </CardTitle>
-            <CardDescription>
-              {t("dashboard.tasks.title")}
-            </CardDescription>
+            <CardDescription>{t("dashboard.tasks.title")}</CardDescription>
           </CardHeader>
           <CardContent className="text-3xl font-semibold">
             {stats?.tasksInProgressCount ?? 0}
@@ -120,11 +128,10 @@ export function HomePage() {
         <Card className="border-border/70 bg-card/82">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Shield className="size-4 text-primary" /> {t("dashboard.stats.assigned")}
-            </CardTitle>
-            <CardDescription>
+              <Shield className="size-4 text-primary" />{" "}
               {t("dashboard.stats.assigned")}
-            </CardDescription>
+            </CardTitle>
+            <CardDescription>{t("dashboard.stats.assigned")}</CardDescription>
           </CardHeader>
           <CardContent className="text-3xl font-semibold">
             {stats?.assignedTasksCount ?? 0}
@@ -133,11 +140,10 @@ export function HomePage() {
         <Card className="border-border/70 bg-card/82">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <CheckCircle2 className="size-4 text-primary" /> {t("dashboard.stats.progress")}
-            </CardTitle>
-            <CardDescription>
+              <CheckCircle2 className="size-4 text-primary" />{" "}
               {t("dashboard.stats.progress")}
-            </CardDescription>
+            </CardTitle>
+            <CardDescription>{t("dashboard.stats.progress")}</CardDescription>
           </CardHeader>
           <CardContent className="text-3xl font-semibold">
             {stats ? `${stats.completionRate}%` : "0%"}
@@ -154,11 +160,10 @@ export function HomePage() {
         <Card className="border-border/70 bg-card/88">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <Clock3 className="size-5 text-primary" /> {t("dashboard.tasks.title")}
+              <Clock3 className="size-5 text-primary" />{" "}
+              {t("dashboard.tasks.title")}
             </CardTitle>
-            <CardDescription>
-              {t("dashboard.subtitle")}
-            </CardDescription>
+            <CardDescription>{t("dashboard.subtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             {dashboard.isLoading ? (
@@ -199,7 +204,9 @@ export function HomePage() {
                       {tag.name}
                     </Badge>
                   ))}
-                  <Badge variant="outline">{formatDate(task.updatedAt, locale)}</Badge>
+                  <Badge variant="outline">
+                    {formatDate(task.updatedAt, locale)}
+                  </Badge>
                 </div>
               </article>
             ))}

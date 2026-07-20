@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ProjectDto, TagDto, TaskDto, TaskStatus } from "@yuno/shared-types";
+import type {
+  ProjectDto,
+  TagDto,
+  TaskDto,
+  TaskStatus,
+} from "@yuno/shared-types";
 import { ApiError } from "@/lib/api-client";
 import { useAppSession } from "@/providers/app-session-provider";
 import { projectsService } from "@/services/projects-service";
@@ -70,12 +75,18 @@ export function useProjectDetailPage(projectId: number) {
   }, [session.token, projectId]);
 
   const project = useMemo(
-    () => projects.find((currentProject) => currentProject.id === projectId) ?? null,
+    () =>
+      projects.find((currentProject) => currentProject.id === projectId) ??
+      null,
     [projects, projectId],
   );
 
   const projectTasks = useMemo(
-    () => tasks.filter((task) => task.project?.id === projectId || task.projectId === projectId),
+    () =>
+      tasks.filter(
+        (task) =>
+          task.project?.id === projectId || task.projectId === projectId,
+      ),
     [tasks, projectId],
   );
 

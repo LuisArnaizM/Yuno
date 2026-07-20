@@ -345,7 +345,11 @@ export async function createTask(userId: number, body: unknown) {
   };
 }
 
-export async function updateTask(userId: number, taskId: number, body: unknown) {
+export async function updateTask(
+  userId: number,
+  taskId: number,
+  body: unknown,
+) {
   const parsedBody = updateTaskDtoSchema.safeParse(body);
 
   if (!parsedBody.success) {

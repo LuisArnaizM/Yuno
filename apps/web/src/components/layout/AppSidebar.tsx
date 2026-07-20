@@ -108,7 +108,9 @@ export function AppSidebar({
                         <Icon className="size-4" />
                       </span>
                       <span className="grid gap-0.5">
-                        <span className="font-medium">{t(item.labelKey as never)}</span>
+                        <span className="font-medium">
+                          {t(item.labelKey as never)}
+                        </span>
                         <span
                           className={cn(
                             "text-xs",

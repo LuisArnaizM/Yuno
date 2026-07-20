@@ -36,7 +36,9 @@ export function HomeProjectList({
       <CardHeader className="gap-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-xl">{t("dashboard.projects.title")}</CardTitle>
+            <CardTitle className="text-xl">
+              {t("dashboard.projects.title")}
+            </CardTitle>
             <p className="text-sm text-muted-foreground">
               {t("dashboard.subtitle")}
             </p>
@@ -47,7 +49,9 @@ export function HomeProjectList({
         </div>
 
         <label className="grid gap-2">
-          <span className="text-sm font-medium">{t("dashboard.projects.search")}</span>
+          <span className="text-sm font-medium">
+            {t("dashboard.projects.search")}
+          </span>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -62,7 +66,9 @@ export function HomeProjectList({
 
       <CardContent className="grid gap-3">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">{t("common.loadingMore")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("common.loadingMore")}
+          </p>
         ) : null}
 
         {!isLoading && visibleProjects.length === 0 ? (
@@ -90,12 +96,15 @@ export function HomeProjectList({
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Badge variant="secondary">{project.taskCount} tareas</Badge>
+                    <Badge variant="secondary">
+                      {project.taskCount} tareas
+                    </Badge>
                     <Badge variant="outline">
                       {project.inProgressTaskCount} en curso
                     </Badge>
                     <Badge variant="outline">
-                      {t("common.updated")} {formatDate(project.updatedAt, locale)}
+                      {t("common.updated")}{" "}
+                      {formatDate(project.updatedAt, locale)}
                     </Badge>
                   </div>
                 </div>

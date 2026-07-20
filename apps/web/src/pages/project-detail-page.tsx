@@ -35,7 +35,10 @@ export function ProjectDetailPage() {
     <section className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="grid gap-1">
-          <Link to="/app/projects" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            to="/app/projects"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
             <ArrowLeft className="size-4" />
             {t("projects.back")}
           </Link>
@@ -57,9 +60,13 @@ export function ProjectDetailPage() {
         {counts.map((entry) => (
           <Card key={entry.status} className="border-border/70 bg-card/82">
             <CardHeader>
-              <CardTitle className="text-lg">{formatTaskStatus(entry.status, locale)}</CardTitle>
+              <CardTitle className="text-lg">
+                {formatTaskStatus(entry.status, locale)}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="text-3xl font-semibold">{entry.count}</CardContent>
+            <CardContent className="text-3xl font-semibold">
+              {entry.count}
+            </CardContent>
           </Card>
         ))}
       </div>
@@ -70,7 +77,9 @@ export function ProjectDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between text-lg">
                 <span>{formatTaskStatus(status, locale)}</span>
-                <Badge variant="secondary">{page.groupedTasks[status].length}</Badge>
+                <Badge variant="secondary">
+                  {page.groupedTasks[status].length}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
@@ -86,7 +95,11 @@ export function ProjectDetailPage() {
                         {task.description ?? t("common.noDescription")}
                       </p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => page.openEditTask(task)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => page.openEditTask(task)}
+                    >
                       {t("common.edit")}
                     </Button>
                   </div>

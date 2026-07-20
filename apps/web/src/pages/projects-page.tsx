@@ -53,7 +53,9 @@ export function ProjectsPage() {
             onClick={() => void projects.createProject()}
           >
             <Plus className="size-4" />
-            {projects.isSubmitting ? t("common.loading") : t("projects.create.button")}
+            {projects.isSubmitting
+              ? t("common.loading")
+              : t("projects.create.button")}
           </Button>
           {projects.error ? (
             <p className="text-sm text-red-600">{projects.error}</p>
@@ -69,8 +71,12 @@ export function ProjectsPage() {
       <div className="grid gap-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">{t("projects.title")}</h2>
-            <p className="text-sm text-muted-foreground">{t("projects.subtitle")}</p>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {t("projects.title")}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t("projects.subtitle")}
+            </p>
           </div>
           <Badge variant="secondary">{projects.projects.length} activos</Badge>
         </div>
@@ -87,7 +93,10 @@ export function ProjectsPage() {
                 </CardHeader>
                 <CardContent className="grid gap-3 text-sm text-muted-foreground">
                   <p>{project.description ?? t("common.noDescription")}</p>
-                  <p>{t("common.updated")} {formatDate(project.updatedAt, locale)}</p>
+                  <p>
+                    {t("common.updated")}{" "}
+                    {formatDate(project.updatedAt, locale)}
+                  </p>
                 </CardContent>
               </Card>
             </Link>
