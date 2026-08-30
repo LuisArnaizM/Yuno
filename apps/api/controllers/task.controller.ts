@@ -1,10 +1,12 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import {
   createTaskDtoSchema,
   updateTaskDtoSchema,
   taskDtoSchema,
+  type CreateTaskDto,
   type TaskDto,
   type TaskStatus,
+  type UpdateTaskDto,
 } from "@yuno/shared-types";
 import { db } from "@/db/client";
 import {
@@ -15,8 +17,26 @@ import {
   users,
   projectMembers,
 } from "@/db/schema";
+import type { ProjectRow, TagRow, TaskRow, UserRow } from "@/db/types";
 import { and } from "drizzle-orm";
+import {
+  BadRequestError,
+  ForbiddenError,
+  InternalServerError,
+  ValidationError,
+} from "@/lib/errors";
+import { buildPaginatedResponse, normalizePagination } from "@/lib/pagination";
 import { invalidPayloadResponse } from "@/lib/validation";
+
+type TaskRelationTag = Pick<
+  TagRow,
+  "id" | "name" | "color" | "createdAt" | "updatedAt"
+>;
+type TaskRelationProject = Pick<
+  ProjectRow,
+  "id" | "name" | "description" | "createdAt" | "updatedAt"
+>;
+type TaskRelationAssignee = Pick<UserRow, "id" | "name" | "email">;
 
 function buildTaskDto(row: {
   id: number;
@@ -24,28 +44,12 @@ function buildTaskDto(row: {
   description: string | null;
   status: TaskStatus;
   projectId: number | null;
-  project: {
-    id: number;
-    name: string;
-    description: string | null;
-    createdAt: string;
-    updatedAt: string;
-  } | null;
+  project: TaskRelationProject | null;
   assigneeId: number | null;
-  assignee: {
-    id: number;
-    name: string;
-    email: string;
-  } | null;
+  assignee: TaskRelationAssignee | null;
   createdAt: string;
   updatedAt: string;
-  tags: Array<{
-    id: number;
-    name: string;
-    color: string | null;
-    createdAt: string;
-    updatedAt: string;
-  }>;
+  tags: TaskRelationTag[];
 }): TaskDto {
   return taskDtoSchema.parse(row);
 }
@@ -166,7 +170,21 @@ async function canUserAccessTask(userId: number, taskId: number) {
   return Boolean(row);
 }
 
-export async function listTasks(userId: number): Promise<TaskDto[]> {
+export async function listTasks(
+  userId: number,
+  pagination?: { page?: number; pageSize?: number },
+) {
+  const { page, pageSize, offset } = normalizePagination(pagination);
+
+  const totalRows = await db
+    .select({ count: sql<number>`count(*)`.as("count") })
+    .from(tasks)
+    .innerJoin(projects, eq(tasks.projectId, projects.id))
+    .innerJoin(projectMembers, eq(projectMembers.projectId, projects.id))
+    .where(eq(projectMembers.userId, userId));
+
+  const total = Number(totalRows[0]?.count ?? 0);
+
   const taskRows = await db
     .select({
       id: tasks.id,
@@ -195,7 +213,9 @@ export async function listTasks(userId: number): Promise<TaskDto[]> {
     .leftJoin(users, eq(tasks.assigneeId, users.id))
     .innerJoin(projectMembers, eq(projectMembers.projectId, projects.id))
     .where(eq(projectMembers.userId, userId))
-    .orderBy(desc(tasks.id));
+    .orderBy(desc(tasks.id))
+    .limit(pageSize)
+    .offset(offset);
 
   const tagsByTaskId = await Promise.all(
     taskRows.map(async (row) => ({
@@ -208,51 +228,56 @@ export async function listTasks(userId: number): Promise<TaskDto[]> {
     tagsByTaskId.map((entry) => [entry.taskId, entry.tags]),
   );
 
-  return taskRows.map((row) =>
-    buildTaskDto({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      status: row.status,
-      projectId: row.projectId,
-      assigneeId: row.assigneeId,
-      assignee:
-        row.assignee === null ||
-        row.assignee.id === null ||
-        row.assignee.name === null ||
-        row.assignee.email === null
-          ? null
-          : {
-              id: row.assignee.id,
-              name: row.assignee.name,
-              email: row.assignee.email,
-            },
-      project:
-        row.project === null ||
-        row.project.id === null ||
-        row.project.name === null ||
-        row.project.createdAt === null ||
-        row.project.updatedAt === null
-          ? null
-          : {
-              id: row.project.id,
-              name: row.project.name,
-              description: row.project.description,
-              createdAt: row.project.createdAt,
-              updatedAt: row.project.updatedAt,
-            },
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      tags: tagsByTaskIdMap.get(row.id) ?? [],
-    }),
+  return buildPaginatedResponse(
+    taskRows.map((row) =>
+      buildTaskDto({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        status: row.status,
+        projectId: row.projectId,
+        assigneeId: row.assigneeId,
+        assignee:
+          row.assignee === null ||
+          row.assignee.id === null ||
+          row.assignee.name === null ||
+          row.assignee.email === null
+            ? null
+            : {
+                id: row.assignee.id,
+                name: row.assignee.name,
+                email: row.assignee.email,
+              },
+        project:
+          row.project === null ||
+          row.project.id === null ||
+          row.project.name === null ||
+          row.project.createdAt === null ||
+          row.project.updatedAt === null
+            ? null
+            : {
+                id: row.project.id,
+                name: row.project.name,
+                description: row.project.description,
+                createdAt: row.project.createdAt,
+                updatedAt: row.project.updatedAt,
+              },
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        tags: tagsByTaskIdMap.get(row.id) ?? [],
+      }),
+    ),
+    total,
+    page,
+    pageSize,
   );
 }
 
-export async function createTask(userId: number, body: unknown) {
+export async function createTask(userId: number, body: CreateTaskDto) {
   const parsedBody = createTaskDtoSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return invalidPayloadResponse(parsedBody.error);
+    return new ValidationError(parsedBody.error).toResponse();
   }
 
   const tagIds = [...new Set(parsedBody.data.tagIds ?? [])];
@@ -268,10 +293,7 @@ export async function createTask(userId: number, body: unknown) {
       .limit(1);
 
     if (!project) {
-      return {
-        status: 400 as const,
-        body: { message: "El proyecto indicado no existe" },
-      };
+      return new BadRequestError("El proyecto indicado no existe").toResponse();
     }
 
     const [membership] = await db
@@ -286,10 +308,9 @@ export async function createTask(userId: number, body: unknown) {
       .limit(1);
 
     if (!membership) {
-      return {
-        status: 403 as const,
-        body: { message: "No tienes acceso a este proyecto" },
-      };
+      return new ForbiddenError(
+        "No tienes acceso a este proyecto",
+      ).toResponse();
     }
   }
 
@@ -300,10 +321,9 @@ export async function createTask(userId: number, body: unknown) {
       .where(inArray(tags.id, tagIds));
 
     if (existingTags.length !== tagIds.length) {
-      return {
-        status: 400 as const,
-        body: { message: "Uno o mas tags indicados no existen" },
-      };
+      return new BadRequestError(
+        "Uno o mas tags indicados no existen",
+      ).toResponse();
     }
   }
 
@@ -322,10 +342,7 @@ export async function createTask(userId: number, body: unknown) {
     .returning();
 
   if (!inserted) {
-    return {
-      status: 500 as const,
-      body: { message: "No se pudo crear la task" },
-    };
+    return new InternalServerError("No se pudo crear la task").toResponse();
   }
 
   await replaceTaskTags(inserted.id, tagIds);
@@ -333,10 +350,9 @@ export async function createTask(userId: number, body: unknown) {
   const task = await loadTaskById(inserted.id);
 
   if (!task) {
-    return {
-      status: 500 as const,
-      body: { message: "No se pudo recuperar la task creada" },
-    };
+    return new InternalServerError(
+      "No se pudo recuperar la task creada",
+    ).toResponse();
   }
 
   return {
@@ -348,21 +364,18 @@ export async function createTask(userId: number, body: unknown) {
 export async function updateTask(
   userId: number,
   taskId: number,
-  body: unknown,
+  body: UpdateTaskDto,
 ) {
   const parsedBody = updateTaskDtoSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return invalidPayloadResponse(parsedBody.error);
+    return new ValidationError(parsedBody.error).toResponse();
   }
 
   const canAccess = await canUserAccessTask(userId, taskId);
 
   if (!canAccess) {
-    return {
-      status: 403 as const,
-      body: { message: "No tienes acceso a esta task" },
-    };
+    return new ForbiddenError("No tienes acceso a esta task").toResponse();
   }
 
   if (parsedBody.data.tagIds) {
@@ -373,10 +386,9 @@ export async function updateTask(
       .where(inArray(tags.id, uniqueTagIds));
 
     if (existingTags.length !== uniqueTagIds.length) {
-      return {
-        status: 400 as const,
-        body: { message: "Uno o mas tags indicados no existen" },
-      };
+      return new BadRequestError(
+        "Uno o mas tags indicados no existen",
+      ).toResponse();
     }
   }
 
@@ -404,10 +416,9 @@ export async function updateTask(
     .returning();
 
   if (!updated) {
-    return {
-      status: 500 as const,
-      body: { message: "No se pudo actualizar la task" },
-    };
+    return new InternalServerError(
+      "No se pudo actualizar la task",
+    ).toResponse();
   }
 
   if (parsedBody.data.tagIds) {
@@ -417,10 +428,9 @@ export async function updateTask(
   const task = await loadTaskById(taskId);
 
   if (!task) {
-    return {
-      status: 500 as const,
-      body: { message: "No se pudo recuperar la task actualizada" },
-    };
+    return new InternalServerError(
+      "No se pudo recuperar la task actualizada",
+    ).toResponse();
   }
 
   return {
@@ -429,7 +439,19 @@ export async function updateTask(
   };
 }
 
-export async function listAssignedTasks(userId: number): Promise<TaskDto[]> {
+export async function listAssignedTasks(
+  userId: number,
+  pagination?: { page?: number; pageSize?: number },
+) {
+  const { page, pageSize, offset } = normalizePagination(pagination);
+
+  const totalRows = await db
+    .select({ count: sql<number>`count(*)`.as("count") })
+    .from(tasks)
+    .where(eq(tasks.assigneeId, userId));
+
+  const total = Number(totalRows[0]?.count ?? 0);
+
   const taskRows = await db
     .select({
       id: tasks.id,
@@ -453,7 +475,9 @@ export async function listAssignedTasks(userId: number): Promise<TaskDto[]> {
     .leftJoin(projects, eq(tasks.projectId, projects.id))
     .leftJoin(users, eq(tasks.assigneeId, users.id))
     .where(eq(tasks.assigneeId, userId))
-    .orderBy(desc(tasks.id));
+    .orderBy(desc(tasks.id))
+    .limit(pageSize)
+    .offset(offset);
 
   const tagsByTaskId = await Promise.all(
     taskRows.map(async (row) => ({
@@ -466,40 +490,45 @@ export async function listAssignedTasks(userId: number): Promise<TaskDto[]> {
     tagsByTaskId.map((entry) => [entry.taskId, entry.tags]),
   );
 
-  return taskRows.map((row) =>
-    buildTaskDto({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      status: row.status,
-      projectId: row.projectId,
-      assigneeId: row.assigneeId,
-      assignee:
-        row.assigneeIdValue === null ||
-        row.assigneeName === null ||
-        row.assigneeEmail === null
-          ? null
-          : {
-              id: row.assigneeIdValue,
-              name: row.assigneeName,
-              email: row.assigneeEmail,
-            },
-      project:
-        row.projectIdValue === null ||
-        row.projectName === null ||
-        row.projectCreatedAt === null ||
-        row.projectUpdatedAt === null
-          ? null
-          : {
-              id: row.projectIdValue,
-              name: row.projectName,
-              description: row.projectDescription,
-              createdAt: row.projectCreatedAt,
-              updatedAt: row.projectUpdatedAt,
-            },
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      tags: tagsByTaskIdMap.get(row.id) ?? [],
-    }),
+  return buildPaginatedResponse(
+    taskRows.map((row) =>
+      buildTaskDto({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        status: row.status,
+        projectId: row.projectId,
+        assigneeId: row.assigneeId,
+        assignee:
+          row.assigneeIdValue === null ||
+          row.assigneeName === null ||
+          row.assigneeEmail === null
+            ? null
+            : {
+                id: row.assigneeIdValue,
+                name: row.assigneeName,
+                email: row.assigneeEmail,
+              },
+        project:
+          row.projectIdValue === null ||
+          row.projectName === null ||
+          row.projectCreatedAt === null ||
+          row.projectUpdatedAt === null
+            ? null
+            : {
+                id: row.projectIdValue,
+                name: row.projectName,
+                description: row.projectDescription,
+                createdAt: row.projectCreatedAt,
+                updatedAt: row.projectUpdatedAt,
+              },
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        tags: tagsByTaskIdMap.get(row.id) ?? [],
+      }),
+    ),
+    total,
+    page,
+    pageSize,
   );
 }

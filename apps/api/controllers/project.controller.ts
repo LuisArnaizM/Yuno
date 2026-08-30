@@ -1,14 +1,35 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import {
   createProjectDtoSchema,
   projectDtoSchema,
+  type CreateProjectDto,
   type ProjectDto,
 } from "@yuno/shared-types";
 import { db } from "@/db/client";
 import { projectMembers, projects } from "@/db/schema";
+import type { ProjectRow } from "@/db/types";
+import {
+  BadRequestError,
+  InternalServerError,
+  ValidationError,
+} from "@/lib/errors";
+import { buildPaginatedResponse, normalizePagination } from "@/lib/pagination";
 import { invalidPayloadResponse } from "@/lib/validation";
 
-export async function listProjects(userId: number): Promise<ProjectDto[]> {
+export async function listProjects(
+  userId: number,
+  pagination?: { page?: number; pageSize?: number },
+) {
+  const { page, pageSize, offset } = normalizePagination(pagination);
+
+  const totalRows = await db
+    .select({ count: sql<number>`count(*)`.as("count") })
+    .from(projectMembers)
+    .innerJoin(projects, eq(projectMembers.projectId, projects.id))
+    .where(eq(projectMembers.userId, userId));
+
+  const total = Number(totalRows[0]?.count ?? 0);
+
   const rows = await db
     .select({
       id: projects.id,
@@ -20,15 +41,23 @@ export async function listProjects(userId: number): Promise<ProjectDto[]> {
     .from(projectMembers)
     .innerJoin(projects, eq(projectMembers.projectId, projects.id))
     .where(eq(projectMembers.userId, userId))
-    .orderBy(desc(projects.id));
-  return rows.map((row) => projectDtoSchema.parse(row));
+    .orderBy(desc(projects.id))
+    .limit(pageSize)
+    .offset(offset);
+
+  return buildPaginatedResponse(
+    rows.map((row) => projectDtoSchema.parse(row)),
+    total,
+    page,
+    pageSize,
+  );
 }
 
-export async function createProject(userId: number, body: unknown) {
+export async function createProject(userId: number, body: CreateProjectDto) {
   const parsedBody = createProjectDtoSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return invalidPayloadResponse(parsedBody.error);
+    return new ValidationError(parsedBody.error).toResponse();
   }
 
   const now = new Date().toISOString();
@@ -44,10 +73,7 @@ export async function createProject(userId: number, body: unknown) {
     .returning();
 
   if (!inserted) {
-    return {
-      status: 500 as const,
-      body: { message: "No se pudo crear el proyecto" },
-    };
+    return new InternalServerError("No se pudo crear el proyecto").toResponse();
   }
 
   await db.insert(projectMembers).values({

@@ -2,10 +2,13 @@ import { desc } from "drizzle-orm";
 import {
   createTagDtoSchema,
   tagDtoSchema,
+  type CreateTagDto,
   type TagDto,
 } from "@yuno/shared-types";
 import { db } from "@/db/client";
 import { tags } from "@/db/schema";
+import type { TagRow } from "@/db/types";
+import { InternalServerError, ValidationError } from "@/lib/errors";
 import { invalidPayloadResponse } from "@/lib/validation";
 
 export async function listTags(): Promise<TagDto[]> {
@@ -13,11 +16,11 @@ export async function listTags(): Promise<TagDto[]> {
   return rows.map((row) => tagDtoSchema.parse(row));
 }
 
-export async function createTag(body: unknown) {
+export async function createTag(body: CreateTagDto) {
   const parsedBody = createTagDtoSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return invalidPayloadResponse(parsedBody.error);
+    return new ValidationError(parsedBody.error).toResponse();
   }
 
   const now = new Date().toISOString();
@@ -32,10 +35,7 @@ export async function createTag(body: unknown) {
     .returning();
 
   if (!inserted) {
-    return {
-      status: 500 as const,
-      body: { message: "No se pudo crear el tag" },
-    };
+    return new InternalServerError("No se pudo crear el tag").toResponse();
   }
 
   return {

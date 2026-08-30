@@ -11,10 +11,15 @@ const createProjectBodySchema = t.Object({
   description: t.Optional(t.String({ maxLength: 500 })),
 });
 
+const paginationQuerySchema = t.Object({
+  page: t.Optional(t.Number({ minimum: 1 })),
+  pageSize: t.Optional(t.Number({ minimum: 1, maximum: 100 })),
+});
+
 export const projectRoutes = new Elysia({ prefix: "/projects" })
   .get(
     "/",
-    async ({ headers, set }) => {
+    async ({ headers, query, set }) => {
       const authResult = await authService.authenticate(headers.authorization);
 
       if (!authResult.ok) {
@@ -22,10 +27,14 @@ export const projectRoutes = new Elysia({ prefix: "/projects" })
         return authResult.body;
       }
 
-      return listProjects(authResult.user.id);
+      return listProjects(authResult.user.id, {
+        page: query.page,
+        pageSize: query.pageSize,
+      });
     },
     {
       headers: authHeaderSchema,
+      query: paginationQuerySchema,
       detail: { tags: ["Projects"] },
     },
   )

@@ -3,18 +3,27 @@ import {
   createUserSchema,
   loginSchema,
   userDtoSchema,
+  type CreateUserDto,
+  type LoginDto,
   type UserDto,
 } from "@yuno/shared-types";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
+import type { UserRow } from "@/db/types";
 import { authService } from "@/lib/auth";
+import {
+  ConflictError,
+  InternalServerError,
+  UnauthorizedError,
+  ValidationError,
+} from "@/lib/errors";
 import { invalidPayloadResponse } from "@/lib/validation";
 
-export async function registerUser(body: unknown) {
+export async function registerUser(body: CreateUserDto) {
   const parsedBody = createUserSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return invalidPayloadResponse(parsedBody.error);
+    return new ValidationError(parsedBody.error).toResponse();
   }
 
   const [existing] = await db
@@ -24,10 +33,7 @@ export async function registerUser(body: unknown) {
     .limit(1);
 
   if (existing) {
-    return {
-      status: 409 as const,
-      body: { message: "El email ya está registrado" },
-    };
+    return new ConflictError("El email ya está registrado").toResponse();
   }
 
   const passwordHash = await Bun.password.hash(parsedBody.data.password);
@@ -41,17 +47,10 @@ export async function registerUser(body: unknown) {
       createdAt: now,
       updatedAt: now,
     })
-    .returning({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-    });
+    .returning();
 
   if (!inserted) {
-    return {
-      status: 500 as const,
-      body: { message: "No se pudo crear el usuario" },
-    };
+    return new InternalServerError("No se pudo crear el usuario").toResponse();
   }
 
   return {
@@ -60,11 +59,11 @@ export async function registerUser(body: unknown) {
   };
 }
 
-export async function loginUser(body: unknown) {
+export async function loginUser(body: LoginDto) {
   const parsedBody = loginSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return invalidPayloadResponse(parsedBody.error);
+    return new ValidationError(parsedBody.error).toResponse();
   }
 
   const [userRecord] = await db
@@ -79,10 +78,7 @@ export async function loginUser(body: unknown) {
     .limit(1);
 
   if (!userRecord) {
-    return {
-      status: 401 as const,
-      body: { message: "Credenciales invalidas" },
-    };
+    return new UnauthorizedError("Credenciales invalidas").toResponse();
   }
 
   const validPassword = await Bun.password.verify(
@@ -91,10 +87,7 @@ export async function loginUser(body: unknown) {
   );
 
   if (!validPassword) {
-    return {
-      status: 401 as const,
-      body: { message: "Credenciales invalidas" },
-    };
+    return new UnauthorizedError("Credenciales invalidas").toResponse();
   }
 
   return {
@@ -113,7 +106,7 @@ export async function getCurrentUser(currentUser: UserDto | null) {
   const authResult = authService.requireUser(currentUser);
 
   if (!authResult.ok) {
-    return authResult;
+    return new UnauthorizedError(authResult.body.message).toResponse();
   }
 
   return {

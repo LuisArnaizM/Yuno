@@ -1,11 +1,6 @@
-import { flattenError, type ZodError } from "zod";
+import { type ZodError } from "zod";
+import { ValidationError } from "@/lib/errors";
 
 export function invalidPayloadResponse(error: ZodError) {
-  return {
-    status: 400 as const,
-    body: {
-      message: "Payload invalido",
-      issues: flattenError(error),
-    },
-  };
+  return new ValidationError(error).toResponse();
 }

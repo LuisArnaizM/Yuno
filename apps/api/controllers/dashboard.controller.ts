@@ -6,12 +6,17 @@ import { listAssignedTasks, listTasks } from "@/controllers/task.controller";
 export async function getDashboardSummary(
   userId: number,
 ): Promise<HomeSummaryDto> {
-  const [projects, tasks, assignedTasks, tags] = await Promise.all([
-    listProjects(userId),
-    listTasks(userId),
-    listAssignedTasks(userId),
-    listTags(),
-  ]);
+  const [projectsResponse, tasksResponse, assignedTasksResponse, tags] =
+    await Promise.all([
+      listProjects(userId),
+      listTasks(userId),
+      listAssignedTasks(userId),
+      listTags(),
+    ]);
+
+  const projects = projectsResponse.data;
+  const tasks = tasksResponse.data;
+  const assignedTasks = assignedTasksResponse.data;
 
   const inProgressTasks = tasks.filter((task) => task.status === "in_progress");
   const completedTasksCount = tasks.filter(

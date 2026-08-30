@@ -11,6 +11,11 @@ const authHeaderSchema = t.Object({
   authorization: t.Optional(t.String()),
 });
 
+const paginationQuerySchema = t.Object({
+  page: t.Optional(t.Number({ minimum: 1 })),
+  pageSize: t.Optional(t.Number({ minimum: 1, maximum: 100 })),
+});
+
 const createTaskBodySchema = t.Object({
   title: t.String({ minLength: 1, maxLength: 120 }),
   description: t.Optional(t.String({ maxLength: 500 })),
@@ -46,7 +51,7 @@ const updateTaskBodySchema = t.Object({
 export const taskRoutes = new Elysia({ prefix: "/tasks" })
   .get(
     "/",
-    async ({ headers, set }) => {
+    async ({ headers, query, set }) => {
       const authResult = await authService.authenticate(headers.authorization);
 
       if (!authResult.ok) {
@@ -54,16 +59,20 @@ export const taskRoutes = new Elysia({ prefix: "/tasks" })
         return authResult.body;
       }
 
-      return listTasks(authResult.user.id);
+      return listTasks(authResult.user.id, {
+        page: query.page,
+        pageSize: query.pageSize,
+      });
     },
     {
       headers: authHeaderSchema,
+      query: paginationQuerySchema,
       detail: { tags: ["Tasks"] },
     },
   )
   .get(
     "/me",
-    async ({ headers, set }) => {
+    async ({ headers, query, set }) => {
       const authResult = await authService.authenticate(headers.authorization);
 
       if (!authResult.ok) {
@@ -71,10 +80,14 @@ export const taskRoutes = new Elysia({ prefix: "/tasks" })
         return authResult.body;
       }
 
-      return listAssignedTasks(authResult.user.id);
+      return listAssignedTasks(authResult.user.id, {
+        page: query.page,
+        pageSize: query.pageSize,
+      });
     },
     {
       headers: authHeaderSchema,
+      query: paginationQuerySchema,
       detail: { tags: ["Tasks"] },
     },
   )
